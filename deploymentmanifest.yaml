@@ -1,0 +1,46 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: ns-green
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-gettingstarted-deployment
+  namespace: ns-green
+spec:
+  selector:
+    matchLabels:
+      app: python-gettingstarted
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: python-gettingstarted
+    spec:
+      containers:
+        - name: python-gettingstarted
+          # enter the path to your image, be sure to include the correct region prefix
+          image: nrt.ocir.io/nrcbpbtrtyz0/regs-container:${BUILDRUN_HASH}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              protocol: TCP
+      imagePullSecrets:
+        - name: devopstest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-gettingstarted-service
+  namespace: ns-green
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-shape: "10Mbps"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: python-gettingstarted
