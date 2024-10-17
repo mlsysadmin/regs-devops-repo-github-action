@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Setup OCI CLI
+      # Step 2: Set up OCI CLI
       - name: Set up OCI CLI
         uses: oracle/oci-github-action/setup-oci-cli@v1
         with:
@@ -28,4 +28,7 @@ jobs:
       # Step 3: Invoke the OCI DevOps Deployment Pipeline
       - name: Trigger OCI DevOps Deployment Pipeline
         run: |
-          oci devops deployment create-deployment --pipeline-id DEPLOYMENT_PIPELINE_OCID --deployment-type STAGE
+          oci devops deployment create-deployment \
+            --pipeline-id ${{ secrets.DEPLOYMENT_PIPELINE_OCID }} \
+            --deployment-type STAGE \
+            --display-name "GitHub Action Deployment"
