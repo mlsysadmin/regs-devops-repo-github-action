@@ -1,51 +1,31 @@
-name: OCI Deploy
-# Controls when the workflow will run
+name: OCI Deployment
+
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main"]
+    branches:
+      - main
 
 jobs:
-  get-ocir-repository-test:
+  oci-deployment:
     runs-on: ubuntu-latest
-    name: Invoke OCI Deployment on to OKE
-    env:
-      OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
-      OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
-      OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
-      OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
-      OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
-
+    
     steps:
-      - name: Check out code
+      # Step 1: Checkout the repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get or create an OCIR Repository
-        uses: oracle-actions/get-ocir-repository@v1.0
-        id: get-ocir-repository
+      # Step 2: Setup OCI CLI
+      - name: Set up OCI CLI
+        uses: oracle/oci-github-action/setup-oci-cli@v1
         with:
-          name: python_fastapi_app
-          compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          tenancy-ocid: ${{ secrets.OCI_CLI_TENANCY }}
+          user-ocid: ${{ secrets.OCI_CLI_USER }}
+          compartment-ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          fingerprint: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          private-key: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          region: ${{ secrets.OCI_CLI_REGION }}
 
-      - name: Log into OCIR
-        uses: oracle-actions/login-ocir@v1.0
-        id: login-ocir
-        with:
-          auth_token: ${{ secrets.OCI_AUTH_TOKEN }}
-
-      - name: Tag and push a container image
-        id: tag-and-push-image
+      # Step 3: Invoke the OCI DevOps Deployment Pipeline
+      - name: Trigger OCI DevOps Deployment Pipeline
         run: |
-          docker build -t "${{ steps.get-ocir-repository.outputs.repo_path }}:$GITHUB_RUN_NUMBER" .
-          docker push "${{ steps.get-ocir-repository.outputs.repo_path }}:$GITHUB_RUN_NUMBER"
-
-      - name: Generate deploy arguments
-        id: create-json
-        run: |
-          echo "::set-output name=deployargs::{\"items\":[{\"name\":\"namespace\",\"value\":\"ns-github\"},{\"name\":\"image_tag\",\"value\":\"$GITHUB_RUN_NUMBER\"}]}"
-
-      - name: Invoke deployment pipeline
-        uses: oracle-actions/run-oci-cli-command@v1.0
-        id:  invoke-deployments
-        with:
-          command: devops deployment create-pipeline-deployment --pipeline-id ${{ secrets.DEPLOYMENT_PIPELINE_OCID }} --deployment-arguments ${{ toJSON(steps.create-json.outputs.deployargs) }}
+          oci devops deployment create-deployment --pipeline-id DEPLOYMENT_PIPELINE_OCID --deployment-type STAGE
