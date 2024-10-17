@@ -25,7 +25,7 @@ spec:
           image: nrt.ocir.io/nrcbpbtrtyz0/regs-container:ar2nd6t
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: 
               protocol: TCP
       imagePullSecrets:
         - name: devopstest
