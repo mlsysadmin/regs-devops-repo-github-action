@@ -16,7 +16,7 @@ jobs:
 
       # Step 2: Set up OCI CLI
       - name: Set up OCI CLI
-        uses: oracle/oci-github-action/setup-oci-cli@v1
+        uses: oracle-actions/setup-oci-cli@v1
         with:
           tenancy-ocid: ${{ secrets.OCI_CLI_TENANCY }}
           user-ocid: ${{ secrets.OCI_CLI_USER }}
