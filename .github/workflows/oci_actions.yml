@@ -1,4 +1,4 @@
-name: OCI Deployment
+name: Trigger OCI DevOps Build Pipeline
 
 on:
   push:
@@ -6,29 +6,52 @@ on:
       - main
 
 jobs:
-  oci-deployment:
+  build-pipeline-trigger:
     runs-on: ubuntu-latest
-    
+
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v2
+      # Step 1: Check out the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # Step 2: Set up OCI CLI
-      - name: Set up OCI CLI
-        uses: oracle-actions/setup-oci-cli@v1
-        with:
-          tenancy-ocid: ${{ secrets.OCI_CLI_TENANCY }}
-          user-ocid: ${{ secrets.OCI_CLI_USER }}
-          compartment-ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
-          fingerprint: ${{ secrets.OCI_CLI_FINGERPRINT }}
-          private-key: ${{ secrets.OCI_CLI_KEY_CONTENT }}
-          region: ${{ secrets.OCI_CLI_REGION }}
-
-      # Step 3: Invoke the OCI DevOps Deployment Pipeline
-      - name: Trigger OCI DevOps Deployment Pipeline
+      # Step 2: Install OCI CLI and other tools
+      - name: Install OCI CLI
         run: |
-          oci devops deployment create-deployment \
-            --pipeline-id ${{ secrets.DEPLOYMENT_PIPELINE_OCID }} \
-            --deployment-type STAGE \
-            --display-name "GitHub Action Deployment"
+          sudo apt-get update
+          sudo apt-get install -y python3-pip openssl
+          pip3 install oci-cli jq
+
+      # Step 3: Parse OCI_CREDENTIALS and Configure OCI
+      - name: Configure OCI using secrets
+        run: |
+          # Create the OCI config directory
+          mkdir -p ~/.oci
+
+          # Parse the OCI credentials from secrets
+          echo "[DEFAULT]" > ~/.oci/config
+          echo "user=$(echo '${{ secrets.OCI_CREDENTIALS }}' | jq -r '.OCI_CLI_USER')" >> ~/.oci/config
+          echo "tenancy=$(echo '${{ secrets.OCI_CREDENTIALS }}' | jq -r '.OCI_CLI_TENANCY')" >> ~/.oci/config
+          echo "region=$(echo '${{ secrets.OCI_CREDENTIALS }}' | jq -r '.OCI_CLI_REGION')" >> ~/.oci/config
+          
+          # Save the private key to a file
+          echo "${{ secrets.OCI_CLI_KEY_CONTENT }}" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+          
+          # Generate the fingerprint and add to config
+          echo "fingerprint=$(openssl rsa -pubout -outform DER -in ~/.oci/oci_api_key.pem | openssl md5 -c | awk '{print $2}')" >> ~/.oci/config
+          
+          # Specify the path to the private key in the config
+          echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
+
+      # Step 4: Repair File Permissions (optional)
+      - name: Repair OCI config file permissions
+        run: |
+          oci setup repair-file-permissions --file ~/.oci/config
+
+      # Step 5: Trigger OCI Build Pipeline
+      - name: Trigger OCI Build Pipeline
+        run: |
+          oci devops build-run create \
+            --build-pipeline-id "${{ secrets.BUILD_PIPELINE_OCID }}" \
+            --display-name "GitHub Actions Trigger" \
+            --wait-for-state SUCCEEDED --debug
