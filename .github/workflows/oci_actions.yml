@@ -34,7 +34,7 @@ jobs:
           echo "region=$(echo '${{ secrets.OCI_CREDENTIALS }}' | jq -r '.OCI_CLI_REGION')" >> ~/.oci/config
           
           # Save the private key to a file
-          echo "${{ secrets.OCI_CLI_KEY_CONTENT }}" > ~/.oci/oci_api_key.pem
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
           
           # Generate the fingerprint and add to config
