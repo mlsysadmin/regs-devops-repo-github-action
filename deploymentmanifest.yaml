@@ -28,7 +28,7 @@ spec:
             - containerPort: 4003
               protocol: TCP
       imagePullSecrets:
-        - name: devopstest
+        - name: devopstest.2
 ---
 apiVersion: v1
 kind: Service
