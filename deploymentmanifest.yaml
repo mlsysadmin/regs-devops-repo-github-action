@@ -22,7 +22,7 @@ spec:
         - name: python-gettingstarted
           # enter the path to your image, be sure to include the correct region prefix
 #          image: ghcr.io/mlsysadmin/regs-devops-repo-github-action:newv1
-          image: nrt.ocir.io/nrcbpbtrtyz0/regs-container:v9
+          image: nrt.ocir.io/nrcbpbtrtyz0/regs-container:v10
           imagePullPolicy: Always
           ports:
             - containerPort: 4003
